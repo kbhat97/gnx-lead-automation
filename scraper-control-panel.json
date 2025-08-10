@@ -1,0 +1,123 @@
+{
+  "name": "GNX Lead Scraper - Control Panel",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "GNX Infinite Leads Generator",
+        "formDescription": "Enter the details below to start a new lead scraping session.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "What business type do you want to search?",
+              "fieldName": "query",
+              "placeholder": "plumbers, HVAC, dentists, etc.",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Where do you want to search?",
+              "fieldName": "location",
+              "placeholder": "Ottawa, Toronto, Vancouver",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "How many results?",
+              "fieldType": "number",
+              "fieldName": "limit",
+              "placeholder": "5",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {
+          "respondWithOptions": { 
+            "values": { 
+              "formSubmittedText": "✅ Success! Your lead scraping has been initiated. New leads are being processed and will appear in the Google Sheet shortly." 
+            } 
+          }
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [-380, 20],
+      "id": "c52c2748-b546-4f61-91bc-fa8d60d2677c",
+      "name": "Form Trigger - Lead Request"
+    },
+    {
+      "parameters": {
+        "url": "http://puppeteer-api:3001/scrape",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "query", "value": "={{ $json.query }}" },
+            { "name": "location", "value": "={{ $json.location }}" },
+            { "name": "limit", "value": "={{ $json.limit || 5 }}" }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-160, 20],
+      "id": "8f20647e-b179-44cd-a3bc-0c83dae9b9ba",
+      "name": "Call Scraper API"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { 
+          "__rl": true, 
+          "value": "YOUR_GOOGLE_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": { 
+          "__rl": true, 
+          "value": "gid=0",
+          "mode": "id"
+        },
+        "columns": { 
+          "mappingMode": "autoMapInputData" 
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [60, 20],
+      "id": "a60c7574-591a-44b4-b47d-ff062310f038",
+      "name": "Append Leads to Sheet"
+    }
+  ],
+  "connections": {
+    "Form Trigger - Lead Request": {
+      "main": [
+        [
+          {
+            "node": "Call Scraper API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Scraper API": {
+      "main": [
+        [
+          {
+            "node": "Append Leads to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-08-10T00:00:00.000Z",
+  "versionId": "1"
+}
