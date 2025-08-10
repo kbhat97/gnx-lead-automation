@@ -1,0 +1,246 @@
+{
+  "name": "GNX Lead Processor - WordPress Qualification",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "rowAddedOrUpdated",
+        "documentId": { 
+          "__rl": true, 
+          "value": "YOUR_GOOGLE_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": { 
+          "__rl": true, 
+          "value": "gid=0",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [440, 340],
+      "id": "3b680512-4217-4348-933e-e28a556d1f02",
+      "name": "New Lead Detected"
+    },
+    {
+      "parameters": { 
+        "batchSize": 1, 
+        "options": { 
+          "runMode": "sequential" 
+        } 
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [660, 340],
+      "id": "96f9a941-88df-45de-91d1-66ca0b9dd20b",
+      "name": "Process Leads One by One"
+    },
+    {
+      "parameters": { 
+        "conditions": { 
+          "string": [ 
+            { 
+              "value1": "={{$json.Website}}", 
+              "operation": "isNotEmpty" 
+            } 
+          ] 
+        } 
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [880, 240],
+      "id": "27083042-4917-4c07-b673-3e1104e1c2e6",
+      "name": "Has Website URL?"
+    },
+    {
+      "parameters": { 
+        "url": "=http://puppeteer-api:3001/check-site?url={{ $json.Website }}", 
+        "options": { 
+          "timeout": 60000, 
+          "continueOnFail": true 
+        } 
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 240],
+      "id": "b73528b9-e152-475a-a38f-a92c3a593259",
+      "name": "Check if WordPress"
+    },
+    {
+      "parameters": { 
+        "mode": "mergeByIndex" 
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1320, 240],
+      "id": "402e4085-f55a-4934-9721-a3f7ddb22e11",
+      "name": "Merge Lead Data + Result"
+    },
+    {
+      "parameters": { 
+        "conditions": { 
+          "boolean": [ 
+            { 
+              "value1": "={{$json.body.isWordPress}}", 
+              "value2": true 
+            } 
+          ] 
+        } 
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1540, 240],
+      "id": "06ed444a-9388-444f-bc14-998897dd6f2d",
+      "name": "Is WordPress Site?"
+    },
+    {
+      "parameters": { 
+        "operation": "update", 
+        "documentId": { 
+          "__rl": true, 
+          "value": "YOUR_GOOGLE_SHEET_ID_HERE",
+          "mode": "id"
+        }, 
+        "sheetName": { 
+          "__rl": true, 
+          "value": "gid=0",
+          "mode": "id"
+        }, 
+        "columnToMatchOn": "Name", 
+        "valueToMatchOn": "={{$json.Name}}", 
+        "columns": { 
+          "values": [ 
+            { 
+              "column": "WordPress", 
+              "value": "Yes" 
+            } 
+          ] 
+        } 
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1760, 140],
+      "id": "d04131df-7b6c-4993-80b1-41de60037a3c",
+      "name": "Mark as WordPress: YES"
+    },
+    {
+      "parameters": { 
+        "operation": "update", 
+        "documentId": { 
+          "__rl": true, 
+          "value": "YOUR_GOOGLE_SHEET_ID_HERE",
+          "mode": "id"
+        }, 
+        "sheetName": { 
+          "__rl": true, 
+          "value": "gid=0",
+          "mode": "id"
+        }, 
+        "columnToMatchOn": "Name", 
+        "valueToMatchOn": "={{$json.Name}}", 
+        "columns": { 
+          "values": [ 
+            { 
+              "column": "WordPress", 
+              "value": "No" 
+            } 
+          ] 
+        } 
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1760, 340],
+      "id": "e4f5a34e-0a5d-4f01-9038-a7343e06a37e",
+      "name": "Mark as WordPress: NO"
+    }
+  ],
+  "connections": {
+    "New Lead Detected": {
+      "main": [
+        [
+          {
+            "node": "Process Leads One by One",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Leads One by One": {
+      "main": [
+        [
+          {
+            "node": "Has Website URL?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Website URL?": {
+      "main": [
+        [
+          {
+            "node": "Check if WordPress",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Lead Data + Result",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Check if WordPress": {
+      "main": [
+        [
+          {
+            "node": "Merge Lead Data + Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Lead Data + Result": {
+      "main": [
+        [
+          {
+            "node": "Is WordPress Site?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is WordPress Site?": {
+      "main": [
+        [
+          {
+            "node": "Mark as WordPress: YES",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark as WordPress: NO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-08-10T00:00:00.000Z",
+  "versionId": "1"
+}
