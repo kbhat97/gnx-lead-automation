@@ -1,0 +1,44 @@
+# docker-compose.yml
+services:
+  postgres:
+    image: postgres:13
+    restart: always
+    environment:
+      - POSTGRES_USER=n8n
+      - POSTGRES_PASSWORD=n8npass
+      - POSTGRES_DB=n8ndb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n -d n8ndb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  puppeteer-api:
+    build:
+      context: ./puppeteer-api
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: n8nio/n8n
+    restart: always
+    ports:
+      - "127.0.0.1:5678:5678"
+    env_file:
+      - .env
+    volumes:
+      - ~/.n8n:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+      puppeteer-api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
